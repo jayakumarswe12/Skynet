@@ -1,9 +1,3 @@
-using System;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Infrastructure.DataContext;
 using Microsoft.EntityFrameworkCore;
 
@@ -22,6 +16,7 @@ namespace API
                 {
                     var context = services.GetRequiredService<ApplicationDbContext>();
                     await context.Database.MigrateAsync();
+                    await ApplicationDbContextSeeding.SeedAsync(context,loggerFactory);
                 }
                 catch (Exception ex)
                 {

@@ -1,0 +1,27 @@
+[
+    {
+      "ProductName": "Smartphone",
+      "Description": "A high-quality smartphone with advanced features",
+      "Price": 799.99,
+      "PictureUrl": 1,
+      "ProductTypeId": 1,
+      "ProductBrandId": 1
+    },
+    {
+      "ProductName": "Laptop",
+      "Description": "Powerful laptop for work and entertainment",
+      "Price": 1499.99,
+      "PictureUrl": 2,
+      "ProductTypeId": 1,
+      "ProductBrandId": 2
+    },
+    {
+      "ProductName": "Headphones",
+      "Description": "Premium wireless headphones with noise cancellation",
+      "Price": 249.99,
+      "PictureUrl": 3,
+      "ProductTypeId": 2,
+      "ProductBrandId": 3
+    }
+  ]
+  
