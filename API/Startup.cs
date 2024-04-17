@@ -1,43 +1,75 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.OpenApi.Writers;
-using Microsoft.Extensions.DependencyInjection;
+using Core.Interfaces;
 using Infrastructure.DataContext;
+using Infrastructure.Repository;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.OpenApi.Models;
 
 namespace API
 {
     public class Startup
     {
-        public static async void Main(string[] args)
+        public Startup(IConfiguration configuration)
         {
-            var host = CreateHostBuilder(args).Build();
-            using (var scope = host.Services.CreateScope())
-            {
-                var services = scope.ServiceProvider;
-                var LoggerFactory = services.GetRequiredService<ILoggerFactory>();
-                try
-                {
-                    var Context = services.GetRequiredService<ApplicationDbContext>();
-                    await Context.Database.MigrateAsync();
-                }
-                catch (Exception ex)
-                {
-                    var Logger = LoggerFactory.CreateLogger<Startup>();
-                    Logger.LogError(ex, "An Error Occured on during Migrations");
-                }
-            }
-            host.Run();
+            Configuration = configuration;
         }
 
-        private static IHostBuilder CreateHostBuilder(string[] args) =>
-        Host.CreateDefaultBuilder(args)
-        .ConfigureWebHostDefaults(webBuilder =>
+        public IConfiguration Configuration { get; }
+
+        public void ConfigureServices(IServiceCollection services)
         {
-            webBuilder.UseStartup<Startup>();
-        });
-        
+            // Configure CORS
+            services.AddCors(options =>
+            {
+                options.AddPolicy("SkyNet", builder =>
+                {
+                    builder.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+                });
+            });
+
+            // Configure DBMS
+            services.AddDbContext<ApplicationDbContext>(options =>
+                options.UseSqlServer(Configuration.GetConnectionString("Skynet")));
+
+            // Swagger/OpenAPI
+            services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
+            });
+
+            services.AddControllers();
+
+            // Register your repository
+            services.AddScoped<IProductRepository, ProductRepository>();
+        }
+
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        {
+            if (env.IsDevelopment())
+            {
+                app.UseSwagger();
+                app.UseSwaggerUI(c =>
+                {
+                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
+                });
+            }
+
+            app.UseHttpsRedirection();
+
+            app.UseRouting();
+
+            app.UseCors("SkyNet");
+
+            app.UseAuthorization();
+
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+            });
+        }
     }
 }

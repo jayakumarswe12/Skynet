@@ -1,38 +1,43 @@
-using Core.Interfaces;
+using System;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Infrastructure.DataContext;
-using Infrastructure.Repository;
 using Microsoft.EntityFrameworkCore;
 
-var builder = WebApplication.CreateBuilder(args);
-
-// Add services to the container.
-#region Configure CORS
-builder.Services.AddCors(Options=>Options.AddPolicy("SkyNet",X=>
-X.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
-#endregion
-#region  Configure DBMS
-var ConnectionStrings=builder.Configuration.GetConnectionString("Skynet");
-builder.Services.AddDbContext<ApplicationDbContext>(Options=>Options.UseSqlServer(ConnectionStrings));
-#endregion
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-builder.Services.AddControllers();
-builder.Services.AddScoped<IProductRepository, ProductRepository>();
-
-var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+namespace API
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    public class Program
+    {
+        public static async Task Main(string[] args)
+        {
+            var host = CreateHostBuilder(args).Build();
+            using (var scope = host.Services.CreateScope())
+            {
+                var services = scope.ServiceProvider;
+                var loggerFactory = services.GetRequiredService<ILoggerFactory>();
+                try
+                {
+                    var context = services.GetRequiredService<ApplicationDbContext>();
+                    await context.Database.MigrateAsync();
+                }
+                catch (Exception ex)
+                {
+                    var logger = loggerFactory.CreateLogger<Program>();
+                    logger.LogError(ex, "An error occurred during migrations");
+                }
+            }
+
+            await host.RunAsync();
+        }
+
+        private static IHostBuilder CreateHostBuilder(string[] args) =>
+            Host.CreateDefaultBuilder(args)
+                .ConfigureWebHostDefaults(webBuilder =>
+                {
+                    webBuilder.UseStartup<Startup>();
+                });
+    }
 }
-
-app.UseHttpsRedirection();
-
-app.MapControllers();
-
-app.Run();
-
-
